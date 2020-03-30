@@ -121,8 +121,8 @@ class GMMs(object):
             return False
 
 
-    def EM(self, init_method='random', is_log=False, is_plot=False, fig_fpath=None,
-           is_gif=False, gif_fpath=None,fps=10):
+    def EM(self, init_method='random', is_log=False, is_plot=False,
+           fig_fpath=None, is_gif=False, gif_fpath=None, fps=10):
         """Expecation-Maximization algorithm
         Args:
             init_method: method of initialing the center of Gaussian models,

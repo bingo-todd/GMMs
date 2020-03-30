@@ -1,8 +1,6 @@
 import numpy as np
 from matplotlib import ticker, cm
 import matplotlib.pyplot as plt
-from sklearn.datasets.samples_generator import make_blobs
-from BasicTools import plot_tools
 
 
 def norm_01(x):
@@ -80,13 +78,3 @@ def k_means(x,k,is_plot=False,max_iter=1000,epsilon=1e-20):
         return [centers,fig]
     else:
         return centers
-
-
-if __name__ == '__main__':
-    x,Y = make_blobs(cluster_std=1,random_state=np.random.randint(100),
-                     n_samples=500,centers=3)
-    # Stratch dataset to get ellipsoid data
-    # x = np.dot(x,np.random.RandomState(0).randn(2,2))
-
-    centers,fig = k_means(x,k=3,is_plot=True)
-    plot_tools.savefig(fig)
