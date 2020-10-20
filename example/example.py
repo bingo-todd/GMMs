@@ -1,7 +1,7 @@
 import numpy as np
-from GMMs import GMMs, k_means
 from BasicTools import plot_tools
 from sklearn.datasets import make_blobs
+from GMMs import GMMs, k_means
 
 
 def k_means_test():
@@ -25,5 +25,5 @@ def GMMs_test():
 
 
 if __name__ == '__main__':
-    k_means_test()
+    # k_means_test()
     GMMs_test()

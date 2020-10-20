@@ -75,8 +75,8 @@ class GMMs(object):
         k = self.k
         [n_sample, n_var] = x.shape
         # mu
-        if init_method == 'k_means':
-            mu_all = k_means(x=x, k=k)
+        if init_method == 'k_mean':
+            mu_all = k_means.k_means(x=x, k=k)
         elif len(init_method) > 5 and init_method[:5] == 'norm_':
             mu_all = np.repeat(np.mean(x, 0)[np.newaxis, :], k, axis=0)
             axis = np.int16(init_method[5:])
@@ -120,7 +120,7 @@ class GMMs(object):
             return False
 
     def EM(self, init_method='random', is_log=False, is_plot=False,
-           fig_path=None, is_gif=False, gif_path=None, fps=10):
+           fig_fpath=None, is_gif=False, gif_fpath=None, fps=10):
         """Expecation-Maximization algorithm
         Args:
             init_method: method of initialing the center of Gaussian models,
@@ -129,9 +129,9 @@ class GMMs(object):
                 'norm_#': equally distributed along give axis
             n_iter_max: the maximum of iteration
             is_plot: whether plot the training result
-            fig_path: file path where image to be saved
+            fig_fpath: file path where image to be saved
             is_gif: whether to plot the iteration process in gif
-            gif_path: file path where gif to be saved
+            gig_fpath: file path where gif to be saved
         """
         epsilon = 1e-20  # small value to avoid #overflow
 
@@ -211,15 +211,15 @@ class GMMs(object):
                               self.iter_record['mu_all'][iter],
                               self.iter_record['sigma_all'][iter],
                               self.iter_record['pi_all'][iter]))
-            gif_writer.save(gif_path, fig, fps=fps)
+            gif_writer.save(gif_fpath, fig, fps=fps)
 
         if is_plot:
-            self.plot_record(fig_path)
+            self.plot_record(fig_fpath)
 
         if is_except:
             raise Exception(except_info)
 
-    def plot_record(self, fig_path):
+    def plot_record(self, fig_fpath):
         x = self.x
         fig = plt.figure(figsize=(8, 3))
         # Befor EM updating
@@ -268,8 +268,8 @@ class GMMs(object):
                    **kwargs)  # bottom-right diagonal
 
         plt.tight_layout()
-        if fig_path is not None:
-            fig.savefig(fig_path)
+        if fig_fpath is not None:
+            fig.savefig(fig_fpath)
         plt.close(fig)
 
     def cal_prob(self, x):
@@ -319,23 +319,14 @@ class GMMs(object):
                              zorder=3)
         return line_all
 
-    def save(self, model_path):
-        np.savez(model_path,
-                 mu_all=self.mu_all,
-                 sigma_all=self.sigma_all,
-                 pi_all=self.pi_all,
-                 iter_record=self.iter_record,
-                 lh_theta=self.lh_theta,
-                 max_iter=self.max_iter)
+    def save(self, fpath):
+        np.save(fpath, [self.mu_all, self.sigma_all, self.pi_all,
+                        self.iter_record, self.lh_theta, self.max_iter])
 
-    def load(self, model_path):
-        data_pack = np.load(model_path, allow_pickle=True)
-        self.mu_all = data_pack['mu_all']
-        self.sigma_all = data_pack['sigma_all']
-        self.pi_all = data_pack['pi_all']
-        self.iter_record = data_pack['iter_record']
-        self.lh_theta = data_pack['lh_theta']
-        self.max_iter = data_pack['max_iter']
+    def load(self, fpath):
+        [self.mu_all, self.sigma_all,
+         self.pi_all, self.iter_record,
+         self.lh_theta, self.max_iter] = np.load(fpath, allow_pickle=True)
 
 
 class GMMs_classifier:
@@ -343,12 +334,12 @@ class GMMs_classifier:
         self.model_all = []
         self.label_all = []
 
-    def load(self, model_path_all, label_all):
+    def load(self, model_fpath_all, label_all):
         self.model_all.clear()
         self.label_all.clear()
-        for model_path, label in zip(model_path_all, label_all):
+        for model_fpath, label in zip(model_fpath_all, label_all):
             gmms = GMMs()
-            gmms.load(model_path=model_path)
+            gmms.load(fpath=model_fpath)
             self.model_all.append(gmms)
             self.label_all.append(label)
 
