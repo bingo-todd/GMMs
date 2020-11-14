@@ -13,7 +13,7 @@ class GMMs_Classifier(object):
         print(f'load models from {model_dir}')
         for label_i, label in enumerate(labels):
             for band_i in range(n_band):
-                model_fpath = os.path.join(model_dir, label, f'{band_i}.npy')
+                model_fpath = os.path.join(model_dir, label, f'{band_i}.npz')
                 model_all[label_i, band_i] = GMMs.GMMs()
                 model_all[label_i, band_i].load(model_fpath)
         print('finish loading')
@@ -42,14 +42,14 @@ class GMMs_Classifier(object):
             for band_i in range(n_band):
                 if True:
                     tasks.append([self.model_all[label_i, band_i],
-                        x[:, band_i, :]])
+                                  x[:, band_i, :]])
         results = easy_parallel(self._cal_lh, tasks, n_worker=n_worker)
         count_tmp = 0
         for label_i in range(n_label):
             for band_i in range(n_band):
                 lh[:, label_i, band_i] = results[count_tmp]
                 count_tmp = count_tmp + 1
-         
+
         # not parallel
         # for label_i in range(n_label):
         #     for band_i in range(n_band):
