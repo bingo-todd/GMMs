@@ -24,7 +24,7 @@ class GMMs(object):
         #
         self.gmms_params = [None, None, None]  # mu_all, sigma_all, pi_all
         self.train_record = {'gmms_params': [], 'lh': []}
-        self.EPS = 1e-20  # small value to avoid #overflow
+        self.EPS = 1e-10  # small value to avoid #overflow
 
     def _gm_pdf(self, x, mu, sigma):
         """ the probability density of given data
@@ -53,7 +53,7 @@ class GMMs(object):
              * np.exp(-.5*dist))
         return p
 
-    def _gmm_pdf(self, x, mu_all, sigma_all, pi_all):
+    def _gmm_pdf(self, x, mu_all, sigma_all, pi_all, return_raw=False):
         """the probability density of given data
         Args:
             x: input data, [n_sample,n_var]
@@ -63,12 +63,14 @@ class GMMs(object):
         Returns:
             probability density of x, [n_sample,n_variable]
         """
-        # n_sample = x.shape[0]
+        n_sample = x.shape[0]
         k = mu_all.shape[0]
-        p = 0
+        p = np.zeros((n_sample, k))
         for model_i in range(k):
-            p = p + pi_all[model_i] * self._gm_pdf(x, mu_all[model_i, :],
-                                                   sigma_all[model_i, :, :])
+            p[:, model_i] = self._gm_pdf(
+                x, mu_all[model_i, :], sigma_all[model_i, :, :])
+        if not return_raw:
+            p = np.sum(p*pi_all[np.newaxis, :], axis=1)
         return p
 
     def _init_gmms_params(self, init_method):
@@ -79,18 +81,13 @@ class GMMs(object):
         # mu
         if init_method == 'k_means':
             mu_all = k_means(x=x, k=k)
-        elif len(init_method) > 5 and init_method[:5] == 'norm_':
-            mu_all = np.repeat(np.mean(x, 0)[np.newaxis, :], k, axis=0)
-            axis = np.int16(init_method[5:])
-            max_ax, min_ax = [np.max(x, 0)[axis], np.min(x, 0)[axis]]
-            mu_all[:, axis] = np.linspace(max_ax, min_ax, k)
         elif init_method == 'random':
             mu_all = x[np.random.choice(n_sample, size=k, replace=False), :]
         # sigma
         sigma_all = np.zeros((k, n_var, n_var), dtype=np.float32)
-        mean_var = np.mean(np.var(x, axis=0))
         for model_i in range(k):
-            sigma_all[model_i] = np.eye(n_var)*mean_var/(10*n_var)
+            sigma_all[model_i] =\
+                np.diag(np.var(self.x-mu_all[model_i], axis=0))
         # pi
         pi_all = np.ones(k, dtype=np.float32)*1.0/k
 
@@ -167,7 +164,12 @@ class GMMs(object):
                                 diff_array)
                          / pd_data_model_i)
                     if constrain_sigma_diag:
-                        sigma_all[model_i] = \
+                        sigma_max = np.max(sigma_all[model_i])
+                        for var_i in range(sigma_all[model_i].shape[0]):
+                            sigma_all[model_i][var_i, var_i] =\
+                                np.clip(sigma_all[model_i][var_i, var_i],
+                                        sigma_max*self.EPS,
+                                        np.Inf)
                             sigma_all[model_i]+np.eye(n_var)*self.EPS
 
                 lh = np.mean(
@@ -273,8 +275,15 @@ class GMMs(object):
         # divide p range in to 100 segments
         levels = np.linspace(np.min(p), np.max(p), 100)
         # assigment each data to corresponding segments
-        index_round = np.argmin(
-            np.abs(p[:, np.newaxis]-levels[np.newaxis, :]), axis=1)
+        try:
+            index_round = np.argmin(
+                np.abs(p[:, np.newaxis]-levels[np.newaxis, :]), axis=1)
+        except Exception as e:
+            fig, ax = plt.subplots(1, 1)
+            ax.plot(p)
+            fig.savefig('gmms_p.png')
+            raise Exception(e)
+
         for i in range(100):
             p[index_round == i] = levels[i]
 
