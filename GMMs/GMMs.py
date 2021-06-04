@@ -316,13 +316,16 @@ class GMMs(object):
         mu_all, sigma_all, pi_all = self.gmms_params
         return self._gmm_pdf(x, mu_all, sigma_all, pi_all)
 
-    def cal_bic(self):
+    def cal_bic(self, x=None):
         """ Bayesian information criterion
         """
+        if x is None:
+            x = self.x
+
         n_sample, n_var = self.x.shape
         n_params = self.k*n_var + self.k**2 + self.k  # mean+sigma+pi
         bic = (n_params*np.log(n_sample)
-               - 2*np.sum(np.log(self.cal_prob(self.x)+self.EPS)))
+               - 2*np.sum(np.log(self.cal_prob(x)+self.EPS)))
         return bic
 
 
