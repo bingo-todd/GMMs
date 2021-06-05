@@ -312,7 +312,7 @@ class GMMs(object):
             with open(train_record_path, 'rb') as train_record_f:
                 self.train_record = pickle.load(train_record_f)
 
-    def cal_prob(self, x):
+    def cal_lh(self, x):
         mu_all, sigma_all, pi_all = self.gmms_params
         return self._gmm_pdf(x, mu_all, sigma_all, pi_all)
 
@@ -325,7 +325,7 @@ class GMMs(object):
         n_sample, n_var = self.x.shape
         n_params = self.k*n_var + self.k*n_var**2 + self.k  # mean+sigma+pi
         bic = (n_params*np.log(n_sample)
-               - 2*np.sum(np.log(self.cal_prob(x)+self.EPS)))
+               - 2*np.sum(np.log(self.cal_lh(x)+self.EPS)))
         return bic
 
 
@@ -344,7 +344,7 @@ class GMMs_classifier:
             self.label_all.append(label)
 
     def classify(self, x):
-        prob_all = np.asarray([model.cal_prob(x) for model in self.model_all])
+        prob_all = np.asarray([model.cal_lh(x) for model in self.model_all])
         label_est = np.asarray([self.label_all[i]
                                 for i in np.argmax(prob_all, axis=0)])
         return label_est
