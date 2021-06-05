@@ -323,7 +323,7 @@ class GMMs(object):
             x = self.x
 
         n_sample, n_var = self.x.shape
-        n_params = self.k*n_var + self.k**2 + self.k  # mean+sigma+pi
+        n_params = self.k*n_var + self.k*n_var**2 + self.k  # mean+sigma+pi
         bic = (n_params*np.log(n_sample)
                - 2*np.sum(np.log(self.cal_prob(x)+self.EPS)))
         return bic
